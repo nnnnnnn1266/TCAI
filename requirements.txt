@@ -1,0 +1,11 @@
+streamlit
+ollama
+chromadb
+pandas
+openpyxl
+numpy
+scikit-learn
+nltk
+rouge-score
+sentence-transformers
+bert-score
