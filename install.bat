@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+chcp 65001 >nul
 
 set VENV_DIR=.venv
 
@@ -31,12 +32,12 @@ if errorlevel 1 (
 )
 
 echo.
-echo ✅ 安裝完成！
+echo [OK] 安裝完成！
 echo 啟用環境：%VENV_DIR%\Scripts\activate
-echo 啟動 UI：streamlit run temp.py
+echo 啟動 UI：%VENV_DIR%\Scripts\python.exe -m streamlit run temp.py
 goto :eof
 
 :error
 echo.
-echo ❌ 安裝失敗，請檢查上方錯誤訊息。
+echo [ERROR] 安裝失敗，請檢查上方錯誤訊息。
 exit /b 1

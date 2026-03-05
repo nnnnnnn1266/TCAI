@@ -73,7 +73,7 @@ ollama pull llama3.1:latest
 ### 3) 啟動 RAG Web 介面
 
 ```bash
-streamlit run temp.py
+python -m streamlit run temp.py
 ```
 
 ### 4) 執行評估腳本
