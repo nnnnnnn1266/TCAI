@@ -42,6 +42,17 @@ flowchart LR
 
 ## 🚀 快速開始（推薦）
 
+### 0) 一鍵安裝（可選）
+
+- macOS / Linux：
+```bash
+bash install.sh
+```
+- Windows：
+```bat
+install.bat
+```
+
 ### 1) 建立環境與安裝
 
 ```bash
