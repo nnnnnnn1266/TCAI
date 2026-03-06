@@ -46,6 +46,9 @@ def initialize() -> None:
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
+    if "chat_enabled" not in st.session_state:
+        st.session_state.chat_enabled = False
+
 
 def get_rag_answer(user_input: str, collection, top_k: int, max_distance: float, candidate_k: int) -> tuple[str, list[dict]]:
     """回傳 RAG 生成結果與檢索片段資訊。"""
@@ -214,6 +217,15 @@ def main() -> None:
         min_hybrid_score = st.slider("最低混合分數門檻", min_value=0.0, max_value=1.0, value=0.45, step=0.01)
 
         st.divider()
+        st.subheader("💬 聊天控制")
+        if st.button("開始聊天", use_container_width=True):
+            st.session_state.chat_enabled = True
+            st.success("已開啟聊天模式，可以輸入問題了。")
+
+        if st.button("暫停聊天", use_container_width=True):
+            st.session_state.chat_enabled = False
+            st.info("已暫停聊天模式。")
+
         st.subheader("🧹 對話管理")
         if st.button("清除歷史對話", use_container_width=True):
             st.session_state.chat_history = []
@@ -228,7 +240,11 @@ def main() -> None:
         st.code(f"ollama pull {EMBEDDING_MODEL}\nollama pull {CHAT_MODEL}")
         st.stop()
 
-    user_input = st.chat_input("請輸入你的烏龜照護問題…")
+    if st.session_state.chat_enabled:
+        user_input = st.chat_input("請輸入你的烏龜照護問題…")
+    else:
+        st.info("請先按左側『開始聊天』按鈕，再輸入問題。")
+        user_input = None
 
     if user_input:
         with st.spinner("正在檢索與生成回答..."):
