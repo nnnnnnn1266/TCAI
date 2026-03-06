@@ -1,108 +1,145 @@
 # TCAI: A Domain-Specific AI Assistant for Turtle Care
-![畫畫](https://github.com/user-attachments/assets/f37dd31d-4b8f-488c-a797-ee5aeea21a70)
 
-### 🔗 Google Colab 筆記本
-* **模型微調 (Fine-tuning):** [點此開啟 Colab 連結](https://colab.research.google.com/drive/1ObUhsEMFp2aHvy-fSGOtUY84A9JCBVH-)
-* **指標評估 (Metrics):** [點此開啟 Colab 連結](https://colab.research.google.com/drive/1IuupF9GvOvMlW0m2Eq3U08EP-ZtQMotB#scrollTo=lx7TZQ6HXM4r)
+TCAI（Turtle Care AI）是面向烏龜飼養與照護領域的 AI 問答專案，結合：
+- **領域資料集**（烏龜 QA）
+- **RAG 檢索增強生成**（Streamlit + ChromaDB + Ollama）
+- **自動化評估工具**（Accuracy / BLEU / ROUGE-L / F1 / Recall / SemSim / BERTScore）
 
-TCAI (Turtle Care AI) 是一個專門為烏龜養殖與照護設計的領域特定人工智慧助手。本專案結合了大型語言模型（LLM）與檢索增強生成（RAG）概念，旨在為飼主、執業者和研究人員提供準確、可靠且易於獲取的烏龜照護知識。
+---
 
-📖 專案背景</br>
-雖然通用型 LLM（如 GPT-4）功能強大，但在海洋生物與特定動物照護等專業領域中，常會出現資訊不足或「幻覺」現象。TCAI 透過以下技術改善此問題：</br>
-1.領域語料庫建構：涵蓋物種特徵、棲息環境、營養需求及疾病管理。</br>
-2.模型微調：採用 Low-Rank Adaptation (LoRA) 與 Supervised Fine-Tuning (SFT)。</br>
-3.量化技術：使用 4-bit 量化以提升部署效率。</br>
- 
-🛠️ 技術架構 </br>
-本專案主要使用了 Unsloth 框架進行 Llama 3.1 (8B) 的快速微調，並開發了完整的評估系統。</br>
-核心檔案說明:</br>
-`turtle_llama3_1_(8b).py`: 使用 Unsloth 進行模型微調的腳本，包含數據預處理與訓練配置。</br>
-`所有指標.py`: 多維度評估工具，計算 F1-score、ROUGE-L、Semantic Similarity 以及 BERTScore。</br>
-`turtle1QA.csv`: 專案核心語料庫，包含專業的烏龜照護問答。</br>
-`LLM_Evaluation_Metrics.ipynb`: 評估指標的視覺化實驗手冊。</br>
+## ✨ 專案亮點
 
-📊 評估指標 </br>
-為了確保回答的專業性，我們對比了多個模型（如 Qwen2, Llama3.1, DeepSeek-R1 等），主要衡量指標包括：</br>
-指標說明: </br>
-1. F1-Score,衡量模型回答與標準答案的詞彙重疊度。</br>
-2. ROUGE-L,評估文本生成的流暢度與內容保留。</br>
-3. Semantic Similarity,使用 SBERT 計算語義相近程度。</br>
-4. BERTScore,利用預訓練模型嵌入向量評估語義一致性。</br>
+- 以烏龜照護知識為核心，降低通用模型在專業領域的幻覺風險。
+- 提供可互動的 Streamlit 問答介面（含 Top-K、距離閾值、檢索分數、歷史對話）。
+- 提供可重現的評估 CLI 腳本，支援 `xlsx/csv` 輸入與結果匯出。
 
-🚀 快速上手</br>
-1. 環境安裝</br>
-`pip install torch torchvision torchaudio`</br>
-`pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"` </br>
-`pip install --no-deps "xformers<0.0.27" "trl<0.9.0" peft accelerate bitsandbytes` </br>
-`pip install rouge-score sentence-transformers bert-score </br>`
+---
 
-2. 模型微調 </br>
-執行` turtle_llama3_1_(8b).py `開始訓練：</br>
-#載入基礎模型 </br>
-`from unsloth import FastLanguageModel
-model, tokenizer = FastLanguageModel.from_pretrained( 
-    model_name = "unsloth/meta-llama-3.1-8b-bnb-4bit",
-    max_seq_length = 2048, </br>
-    load_in_4bit = True,</br>
-) 
-#開始微調... 
-`
-3. 性能測試 </br>
-執行評估腳本：</br>
-`python 所有指標.py`
+## 🧱 系統架構
 
-📊 資料集 (目前有291筆) </br>
-我們構建了一個涵蓋四大領域的高質量烏龜照護資料庫 ：</br>
-1.品種特性：體型、生長速度、壽命與行為模式 。</br>
-2.飼養環境：水質管理、溫度控制、UVB 燈光需求與棲息地佈置 。</br>
-3.飲食習性：營養比例、推薦/禁忌食物及維生素補充 。</br>
-4.常見疾病：呼吸道感染、眼部發炎、軟殼症及寄生蟲防治建議 。</br>
+```mermaid
+flowchart LR
+    A[使用者問題] --> B[Streamlit temp.py]
+    B --> C[Ollama Embedding mxbai-embed-large]
+    C --> D[ChromaDB Persistent Collection]
+    D --> E[取回 Top-K 相關片段]
+    E --> F[距離閾值過濾]
+    F --> G[Ollama LLM llama3.1]
+    G --> H[中文回答 + 來源片段 + 分數顯示]
+```
 
-實驗表格: </br>
+---
 
-| Model | F1-score (%) | Semantic Similarity (%) | BERTScore (%) | ROUGE-L (%) |
-| :--- | :---: | :---: | :---: | :---: |
-| **TCAI** | **77.36%** | 93.12% | **77.14%** | **68.83%** |
-| Qwen2-7B | 75.92% | **94.64%** | 74.20% | 67.06% |
-| LLaMA3.1-8B | 77.32% | 86.91% | 74.59% | 66.67% |
-| DeepSeek-R1-Distill-Llama-8B | 76.84% | 92.85% | 74.95% | 66.17% |
-| DeepSeek-R1-Distill-Qwen-7B | 76.03% | 92.61% | 74.21% | 66.04% |
+## 📁 專案結構
 
-**Table 1. Performance comparison of TCAI and baseline models.**
+- `temp.py`：RAG 問答介面（Streamlit）
+- `所有指標.py`：模型回答評估 CLI
+- `turtle_llama3_1_(8b).py`：Llama 3.1 微調流程（Unsloth）
+- `requirements.txt`：執行依賴
+- `turtleQA_R2.csv` / `turtle1QA.xlsx` / `烏龜問題集測試rag2.xlsx`：資料檔
 
-<img width="1564" height="906" alt="image" src="https://github.com/user-attachments/assets/a5d06b17-53cc-452a-b9e5-7a75a388d776" />
+---
 
+## 🚀 快速開始（推薦）
 
+### 0) 一鍵安裝（可選）
 
+- macOS / Linux：
+```bash
+bash install.sh
+```
+- Windows：
+```bat
+install.bat
+```
 
+### 1) 建立環境與安裝
 
-//
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
 
-檢索增強生成 (RAG)：結合向量數據庫，即時檢索相關知識片段，確保回答具備事實依據 。
+pip install -r requirements.txt
+```
 
-介面: Streamlit </br>
-檢索技術:Embedding models mxbai-embed-large</br>
-模型:llama3.1</br>
+### 2) 準備 Ollama 模型
 
-==建虛擬環境==</br>
-python版本3.12</br>
-cd C:\Users\YourName\YourProject</br>
-python -m venv myenv(環境名稱)</br>
-myenv(環境名稱)\Scripts\activate</br>
+```bash
+ollama pull mxbai-embed-large
+ollama pull llama3.1:latest
+```
 
-==安裝步驟== </br>
-pip install requests </br>
-ollama pull mxbai-embed-large (安裝嵌入模型) </br>
-ollama pull meta-llama/Meta-Llama-3.1(安裝llama3模型) </br>
-pip install chromadb安裝chromadb(向量庫) </br>
-pip install streamlit </br>
-pip install ollama </br>
-pip install openpyxl </br>
+### 3) 啟動 RAG Web 介面
 
-==開啟== </br>
-**記得先打開ollma </br>
-進入環境:myenv\Scripts\activate </br>
-啟動: streamlit run temp.py </br>
+```bash
+python -m streamlit run temp.py
+```
 
+### 4) 執行評估腳本
 
-![image](https://github.com/user-attachments/assets/1c311b3f-7bfe-4e75-9742-4e9c2ba04f15)
+```bash
+python 所有指標.py --input turtle1QA.xlsx --output model_scores.xlsx
+```
+
+---
+
+## 🖥️ RAG 介面功能
+
+在 `temp.py` 介面中，你可以：
+- 調整 **Top-K 文件數**
+- 調整 **初步召回數（重排前）**（先擴大召回再重排）
+- 調整 **最大距離閾值（越小越嚴格）**
+- 檢視 **檢索片段與混合分數（語意+關鍵字）**
+- 設定 **最低混合分數門檻** 並查看問題關鍵字高亮
+- 檢視與清除 **歷史對話**
+
+---
+
+## 📊 評估指標說明
+
+`所有指標.py` 會輸出以下指標：
+- **Accuracy**：完全比對正確率
+- **BLEU**：字元級重疊品質
+- **ROUGE-L**：長序列重疊品質
+- **F1 / Recall**：字元集合層級評估
+- **SemSim**：SBERT 語意相似度
+- **BERTScore**：語意層級比對
+
+輸出檔案預設為：`model_scores.xlsx`。
+
+---
+
+## 🧪 微調（選用）
+
+若你要訓練領域模型，可參考：
+- `turtle_llama3_1_(8b).py`
+
+此腳本為 Unsloth/Colab 風格流程，建議在具 GPU 環境執行。
+
+---
+
+## ⚠️ 常見問題
+
+1. **`streamlit: command not found`**
+   - 請先啟用虛擬環境並安裝 `requirements.txt`。
+
+2. **Ollama 呼叫失敗 / 模型找不到**
+   - 先確認 Ollama 服務已啟動，且 `ollama pull` 完成模型下載。
+   - 可先測試：`ollama list` 是否能看到 `mxbai-embed-large` 與 `llama3.1:latest`。
+
+3. **首次啟動很慢**
+   - 系統會先把知識庫建立 embedding 並寫入本地 ChromaDB；之後啟動會快很多。
+
+---
+
+## 🔗 參考連結
+
+- Fine-tuning Colab: <https://colab.research.google.com/drive/1ObUhsEMFp2aHvy-fSGOtUY84A9JCBVH->
+- Metrics Colab: <https://colab.research.google.com/drive/1IuupF9GvOvMlW0m2Eq3U08EP-ZtQMotB>
+
+---
+
+## 📌 License
+
+若你有授權策略需求（研究/商用），建議在此補上明確 License（例如 MIT / Apache-2.0）。
