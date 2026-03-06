@@ -88,8 +88,10 @@ python 所有指標.py --input turtle1QA.xlsx --output model_scores.xlsx
 
 在 `temp.py` 介面中，你可以：
 - 調整 **Top-K 文件數**
+- 調整 **初步召回數（重排前）**（先擴大召回再重排）
 - 調整 **最大距離閾值（越小越嚴格）**
-- 檢視 **檢索片段與相關分數**
+- 檢視 **檢索片段與混合分數（語意+關鍵字）**
+- 設定 **最低混合分數門檻** 並查看問題關鍵字高亮
 - 檢視與清除 **歷史對話**
 
 ---
@@ -124,6 +126,7 @@ python 所有指標.py --input turtle1QA.xlsx --output model_scores.xlsx
 
 2. **Ollama 呼叫失敗 / 模型找不到**
    - 先確認 Ollama 服務已啟動，且 `ollama pull` 完成模型下載。
+   - 可先測試：`ollama list` 是否能看到 `mxbai-embed-large` 與 `llama3.1:latest`。
 
 3. **首次啟動很慢**
    - 系統會先把知識庫建立 embedding 並寫入本地 ChromaDB；之後啟動會快很多。
