@@ -9,7 +9,7 @@ COLLECTION_NAME = "demodocs"
 CHROMA_PATH = ".chroma"
 DATA_PATH = "烏龜問題集測試rag2.xlsx"
 EMBEDDING_MODEL = "mxbai-embed-large"
-CHAT_MODEL = "llama3.1"
+CHAT_MODEL = "llama3.1:latest"
 
 
 def create_client() -> chromadb.PersistentClient:
@@ -125,39 +125,13 @@ def _extract_installed_model_names(raw_models: Iterable[dict]) -> set[str]:
     """從 ollama.list() 的結果抽出可比對名稱。"""
     names: set[str] = set()
     for model in raw_models:
-        # 不同 ollama 版本可能用 name 或 model 欄位
-        model_name = str(model.get("name") or model.get("model") or "").strip()
+        model_name = str(model.get("name", "")).strip()
         if not model_name:
             continue
-        norm = _normalize_model_name(model_name)
-        names.add(norm)
+        names.add(_normalize_model_name(model_name))
+        # 同時加入去掉 tag 的名稱，方便比對 like llama3.1 vs llama3.1:latest
         names.add(_normalize_model_name(model_name.split(":")[0]))
     return names
-
-
-def _model_exists(model_name: str, installed: set[str]) -> bool:
-    """確認模型是否存在（先查 list，再用 show 做保險檢查）。"""
-    normalized = _normalize_model_name(model_name)
-    short_name = _normalize_model_name(model_name.split(":")[0])
-
-    if normalized in installed or short_name in installed:
-        return True
-
-    # 某些環境 list 回傳不完整，補做 show 檢查
-    try:
-        ollama.show(model_name)
-        return True
-    except Exception:
-        pass
-
-    if ":" in model_name:
-        try:
-            ollama.show(model_name.split(":")[0])
-            return True
-        except Exception:
-            pass
-
-    return False
 
 
 def verify_ollama_ready() -> None:
@@ -172,10 +146,11 @@ def verify_ollama_ready() -> None:
     raw_models = list_resp.get("models", []) if isinstance(list_resp, dict) else []
     installed = _extract_installed_model_names(raw_models)
 
+    # 只要 exact 或無 tag 版本存在即視為可用
     missing = []
-    if not _model_exists(EMBEDDING_MODEL, installed):
+    if _normalize_model_name(EMBEDDING_MODEL) not in installed and _normalize_model_name(EMBEDDING_MODEL.split(":")[0]) not in installed:
         missing.append(EMBEDDING_MODEL)
-    if not _model_exists(CHAT_MODEL, installed):
+    if _normalize_model_name(CHAT_MODEL) not in installed and _normalize_model_name(CHAT_MODEL.split(":")[0]) not in installed:
         missing.append(CHAT_MODEL)
 
     if missing:

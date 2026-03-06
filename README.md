@@ -127,7 +127,7 @@ python 所有指標.py --input turtle1QA.xlsx --output model_scores.xlsx
 
 2. **Ollama 呼叫失敗 / 模型找不到**
    - 先確認 Ollama 服務已啟動，且 `ollama pull` 完成模型下載。
-   - 可先測試：`ollama list` 是否能看到 `mxbai-embed-large` 與 `llama3.1`（或 `llama3.1:latest`）。
+   - 可先測試：`ollama list` 是否能看到 `mxbai-embed-large` 與 `llama3.1:latest`。
 
 3. **首次啟動很慢**
    - 系統會先把知識庫建立 embedding 並寫入本地 ChromaDB；之後啟動會快很多。
