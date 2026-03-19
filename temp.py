@@ -121,17 +121,51 @@ def _normalize_model_name(name: str) -> str:
     return name.strip().lower()
 
 
-def _extract_installed_model_names(raw_models: Iterable[dict]) -> set[str]:
+def _coerce_model_name(model: object) -> str:
+    """兼容不同 ollama 套件版本的模型名稱欄位。"""
+    if isinstance(model, dict):
+        for key in ("name", "model"):
+            raw_value = model.get(key)
+            value = "" if raw_value is None else str(raw_value).strip()
+            if value:
+                return value
+        return ""
+
+    for attr in ("name", "model"):
+        raw_value = getattr(model, attr, None)
+        value = "" if raw_value is None else str(raw_value).strip()
+        if value:
+            return value
+    return ""
+
+
+def _extract_installed_model_names(raw_models: Iterable[object]) -> set[str]:
     """從 ollama.list() 的結果抽出可比對名稱。"""
     names: set[str] = set()
     for model in raw_models:
-        model_name = str(model.get("name", "")).strip()
+        model_name = _coerce_model_name(model)
         if not model_name:
             continue
         names.add(_normalize_model_name(model_name))
         # 同時加入去掉 tag 的名稱，方便比對 like llama3.1 vs llama3.1:latest
         names.add(_normalize_model_name(model_name.split(":")[0]))
     return names
+
+
+def _extract_models_from_list_response(list_resp: object) -> list[object]:
+    """兼容 dict / pydantic object / list 三種常見 ollama.list() 回傳格式。"""
+    if isinstance(list_resp, dict):
+        models = list_resp.get("models", [])
+        return list(models) if isinstance(models, Iterable) and not isinstance(models, (str, bytes, dict)) else []
+
+    models_attr = getattr(list_resp, "models", None)
+    if models_attr is not None and not isinstance(models_attr, (str, bytes, dict)):
+        return list(models_attr)
+
+    if isinstance(list_resp, Iterable) and not isinstance(list_resp, (str, bytes, dict)):
+        return list(list_resp)
+
+    return []
 
 
 def verify_ollama_ready() -> None:
@@ -143,7 +177,7 @@ def verify_ollama_ready() -> None:
             "無法連線到 Ollama，請先啟動 Ollama 應用程式/服務。"
         ) from exc
 
-    raw_models = list_resp.get("models", []) if isinstance(list_resp, dict) else []
+    raw_models = _extract_models_from_list_response(list_resp)
     installed = _extract_installed_model_names(raw_models)
 
     # 只要 exact 或無 tag 版本存在即視為可用
@@ -155,8 +189,12 @@ def verify_ollama_ready() -> None:
 
     if missing:
         hint_cmds = "\n".join([f"ollama pull {m}" for m in missing])
+        installed_text = ", ".join(sorted(installed)) if installed else "未取得任何已安裝模型資訊"
         raise RuntimeError(
-            "缺少必要 Ollama 模型：" + ", ".join(missing) + f"\n請先執行：\n{hint_cmds}"
+            "缺少必要 Ollama 模型："
+            + ", ".join(missing)
+            + f"\n目前偵測到：{installed_text}"
+            + f"\n請先執行：\n{hint_cmds}"
         )
 
 
