@@ -34,15 +34,21 @@ flowchart LR
 
 - `temp.py`：RAG 問答介面（Streamlit）
 - `所有指標.py`：模型回答評估 CLI
-- `turtle_llama3_1_(8b).py`：Llama 3.1 微調流程（Unsloth）
-- `requirements.txt`：執行依賴
+- `turtle_llama3_1_(8b).py`：Llama 3.1 + 本地資料集微調 CLI（Unsloth）
+- `requirements.txt`：RAG / 評估依賴
+- `requirements-train.txt`：Llama 3.1 微調依賴
+- `ENV_SETUP.md`：環境建立與操作步驟
 - `turtleQA_R2.csv` / `turtle1QA.xlsx` / `烏龜問題集測試rag2.xlsx`：資料檔
 
 ---
 
 ## 🚀 快速開始（推薦）
 
-### 0) 一鍵安裝（可選）
+### 0) 先看環境說明（推薦）
+
+- 詳細步驟請看：`ENV_SETUP.md`
+
+### 1) 一鍵建立一般使用環境（RAG / 評估）
 
 - macOS / Linux：
 ```bash
@@ -53,21 +59,15 @@ bash install.sh
 install.bat
 ```
 
-### 1) 建立環境與安裝
+### 2) 一鍵建立訓練環境（Llama 3.1 微調）
 
+- macOS / Linux：
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-
-pip install -r requirements.txt
+bash install.sh training
 ```
-
-### 2) 準備 Ollama 模型
-
-```bash
-ollama pull mxbai-embed-large
-ollama pull llama3.1:latest
+- Windows：
+```bat
+install.bat training
 ```
 
 ### 3) 啟動 RAG Web 介面
@@ -113,10 +113,24 @@ python 所有指標.py --input turtle1QA.xlsx --output model_scores.xlsx
 
 ## 🧪 微調（選用）
 
-若你要訓練領域模型，可參考：
+若你要用自己的資料重新訓練 TCAI，可參考：
 - `turtle_llama3_1_(8b).py`
 
-此腳本為 Unsloth/Colab 風格流程，建議在具 GPU 環境執行。
+此腳本已改為 **本地資料集優先** 的 Unsloth CLI，預設會讀取專案內的 `turtleQA_R2.csv`，並維持 **Llama 3.1 8B Instruct** 作為底模。支援 `csv/xlsx`，也可透過參數指定問題欄位、答案欄位與推理/補充欄位。
+
+範例：
+```bash
+python 'turtle_llama3_1_(8b).py' \
+  --dataset turtleQA_R2.csv \
+  --question-column Question \
+  --answer-column Response \
+  --reasoning-column Complex_CoT \
+  --max-steps 200 \
+  --output-dir outputs/llama3_1_tcai \
+  --save-adapter-dir lora_model
+```
+
+> 需要 NVIDIA GPU / CUDA 環境；若只有 CPU，腳本會直接提示無法進行微調。
 
 ---
 

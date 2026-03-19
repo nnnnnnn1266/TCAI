@@ -1,0 +1,7 @@
+-r requirements.txt
+datasets
+transformers
+trl
+accelerate
+bitsandbytes
+unsloth
